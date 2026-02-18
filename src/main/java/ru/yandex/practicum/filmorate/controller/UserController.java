@@ -19,10 +19,12 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+
     @GetMapping()
     public List<User> getUsers() {
         return new ArrayList<>(userService.findAll());
     }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public User create(@Valid @RequestBody User user) {
