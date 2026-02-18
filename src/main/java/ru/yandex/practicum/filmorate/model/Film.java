@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.time.Duration;
 import java.time.LocalDate;
 
 /**
@@ -24,5 +23,5 @@ public class Film {
     @PastOrPresent
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate releaseDate;
-    private Duration duration;
+    private Long duration;
 }

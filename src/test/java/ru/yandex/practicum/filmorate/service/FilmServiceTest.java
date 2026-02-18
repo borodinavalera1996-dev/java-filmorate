@@ -7,7 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -28,7 +27,7 @@ public class FilmServiceTest {
 
     @Test
     public void shouldReturnFilms() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), Duration.ofHours(1));
+        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L);
         filmService.create(mockFilm);
 
         Collection<Film> all = filmService.findAll();
@@ -38,7 +37,7 @@ public class FilmServiceTest {
 
     @Test
     public void shouldCreateFilm() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), Duration.ofHours(1));
+        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L);
         Film film = filmService.create(mockFilm);
 
         assertEquals(film, mockFilm);
@@ -46,21 +45,21 @@ public class FilmServiceTest {
 
     @Test
     public void shouldCreateFilmWithDurationIsNegative() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), Duration.ofHours(1).minusHours(3));
+        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), -100L);
         assertThrows(ValidationException.class, () -> filmService.create(mockFilm));
     }
 
     @Test
     public void shouldCreateFilmWithOldReleaseDate() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1799, 12, 6), Duration.ofHours(1));
+        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1799, 12, 6), 100L);
         assertThrows(ValidationException.class, () -> filmService.create(mockFilm));
     }
 
     @Test
     public void shouldUpdateFilm() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), Duration.ofHours(1));
+        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L);
         Film film = filmService.create(mockFilm);
-        Film mockFilm1 = new Film(1L, "test1", "testtest1", LocalDate.of(1998, 12, 6), Duration.ofHours(1));
+        Film mockFilm1 = new Film(1L, "test1", "testtest1", LocalDate.of(1998, 12, 6), 100L);
         filmService.update(mockFilm1);
         assertEquals(film, mockFilm1);
     }
