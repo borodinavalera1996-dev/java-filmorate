@@ -6,31 +6,28 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/films")
+@RequestMapping("/users")
 @RequiredArgsConstructor
-public class FilmController {
+public class UserController {
 
-    private final FilmService filmService;
-
+    private final UserService userService;
     @GetMapping()
-    public List<Film> getFilms() {
-        return new ArrayList<>(filmService.findAll());
+    public List<User> getUsers() {
+        return new ArrayList<>(userService.findAll());
     }
-
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Film create(@Valid @RequestBody Film film) {
+    public User create(@Valid @RequestBody User user) {
         try {
-            return filmService.create(film);
+            return userService.create(user);
         } catch (ValidationException e) {
             log.error(e.getMessage(), e);
             throw e;
@@ -38,9 +35,9 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film update(@RequestBody Film newFilm) {
+    public User update(@RequestBody User newUser) {
         try {
-            return filmService.update(newFilm);
+            return userService.update(newUser);
         } catch (ValidationException e) {
             log.error(e.getMessage(), e);
             throw e;
