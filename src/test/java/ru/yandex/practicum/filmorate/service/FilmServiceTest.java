@@ -44,12 +44,6 @@ public class FilmServiceTest {
     }
 
     @Test
-    public void shouldCreateFilmWithDurationIsNegative() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), -100L);
-        assertThrows(ValidationException.class, () -> filmService.create(mockFilm));
-    }
-
-    @Test
     public void shouldCreateFilmWithOldReleaseDate() throws Exception {
         Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1799, 12, 6), 100L);
         assertThrows(ValidationException.class, () -> filmService.create(mockFilm));

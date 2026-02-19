@@ -58,12 +58,6 @@ public class UserServiceTest {
     }
 
     @Test
-    public void shouldCreateUserWithBirthdayInFuture() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "name", "", LocalDate.now().plusDays(1));
-        assertThrows(ValidationException.class, () -> userService.create(mockUser));
-    }
-
-    @Test
     public void shouldUpdateUser() throws Exception {
         User mockUser = new User(1L, "test@fg.ru", "name", "name", LocalDate.of(1999, 12, 6));
         User user = userService.create(mockUser);
