@@ -1,0 +1,46 @@
+package ru.yandex.practicum.filmorate.controller;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
+@RestController
+@RequestMapping("/users")
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserService userService;
+
+    @GetMapping()
+    public List<User> getUsers() {
+        log.info("Method getUsers was called.");
+        return new ArrayList<>(userService.findAll());
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public User create(@Valid @RequestBody User user) {
+        log.info("Method create User was called.");
+        log.trace("With data: " + user.toString());
+        User returnUser = userService.create(user);
+        log.trace("With data: " + returnUser.toString());
+        return returnUser;
+    }
+
+    @PutMapping
+    public User update(@Valid @RequestBody User newUser) {
+        log.info("Method create User was called.");
+        log.trace("With data: " + newUser.toString());
+        User returnUser = userService.update(newUser);
+        log.trace("With data: " + returnUser.toString());
+        return returnUser;
+    }
+}
