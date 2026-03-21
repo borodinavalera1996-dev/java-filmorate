@@ -4,7 +4,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
@@ -42,5 +46,42 @@ public class FilmController {
         Film returnFilm = filmService.update(newFilm);
         log.trace("With data: " + returnFilm.toString());
         return returnFilm;
+    }
+
+    @PutMapping(path = "{id}/like/{userId}")
+    public void setLike(@PathVariable long id, @PathVariable long userId) {
+        log.info("Method setLike was called.");
+        filmService.setLike(id, userId);
+    }
+
+    @DeleteMapping(path = "{id}/like/{userId}")
+    public void deleteLike(@PathVariable long id, @PathVariable long userId) {
+        log.info("Method deleteLike was called.");
+        filmService.deleteLike(id, userId);
+    }
+
+    @GetMapping(path = "/popular")
+    public List<Film> getTopFilms(@RequestParam(defaultValue = "10") long count) {
+        log.info("Method getTopFilms was called.");
+        return filmService.getTopFilms(count);
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ResponseEntity<String> handleNotFoundException(NotFoundException e) {
+        return new ResponseEntity<>("{\"message\": \"Film not found: " + e.getMessage() + "\"}", HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler({ValidationException.class, jakarta.validation.ValidationException.class, MethodArgumentNotValidException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<String> handleValidationException(Exception e) {
+        return new ResponseEntity<>("{\"message\": \"" + e.getMessage() + "\"}", HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = {Exception.class})
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResponseEntity<String> handleGenericException(Exception ex) {
+        // Fallback handler for any other unhandled exception
+        return new ResponseEntity<>("Internal Server Error " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

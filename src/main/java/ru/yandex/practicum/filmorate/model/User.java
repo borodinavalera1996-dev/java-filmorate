@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -26,4 +28,11 @@ public class User {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Past(message = "Дата рождения должна быть в прошлом")
     private LocalDate birthday;
+    private Set<Long> friends;
+
+    public Set<Long> getFriends() {
+        if (friends == null)
+            friends = new HashSet<>();
+        return friends;
+    }
 }

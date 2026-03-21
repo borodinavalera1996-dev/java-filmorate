@@ -1,75 +1,75 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    private final Map<Long, User> users = new HashMap<>();
 
-    public Collection<User> findAll() {
-        return users.values();
+    private UserStorage userStorage;
+
+    @Autowired
+    public UserService(UserStorage userStorage) {
+        this.userStorage = userStorage;
     }
 
     public User create(User user) {
-        validate(user);
-        long id = getNextId();
-        user.setId(id);
-        users.put(id, user);
-        return user;
+        return userStorage.create(user);
     }
 
-    private static void validate(User user) {
-        if (user.getLogin().contains(" ")) {
-            log.error("Логин не может быть пустым и содержать пробелы");
-            throw new ValidationException("Логин не может быть пустым и содержать пробелы");
-        }
-        if (user.getName() == null || user.getName().isBlank()) {
-            log.debug("Имя было пустым");
-            user.setName(user.getLogin());
-        }
+    public User getUser(long id) {
+        return userStorage.get(id);
+    }
+
+    public Collection<User> findAll() {
+        return userStorage.findAll();
     }
 
     public User update(User newUser) {
-        if (newUser.getId() == null) {
-            log.error("Id должен быть указан");
-            throw new ValidationException("Id должен быть указан");
-        }
-        if (!users.containsKey(newUser.getId())) {
-            log.error("Пользователь с id = " + newUser.getId() + " не найден");
-            throw new NotFoundException("Пользователь с id = " + newUser.getId() + " не найден");
-        }
-        validate(newUser);
-        User oldUser = users.get(newUser.getId());
-        if (!newUser.getEmail().isBlank()) {
-            oldUser.setEmail(newUser.getEmail());
-        }
-        if (!newUser.getLogin().isBlank()) {
-            oldUser.setLogin(newUser.getLogin());
-        }
-        oldUser.setName(newUser.getName());
-        oldUser.setBirthday(newUser.getBirthday());
-        return oldUser;
+        return userStorage.update(newUser);
+    }
+
+    public User addFriend(long id, long friendId) {
+        User user = userStorage.get(id);
+        User friend = userStorage.get(friendId);
+        user.getFriends().add(friend.getId());
+        friend.getFriends().add(user.getId());
+        return user;
+    }
+
+    public void deleteFriend(long id, long friendId) {
+        User user = userStorage.get(id);
+        User friend = userStorage.get(friendId);
+        user.getFriends().remove(friend.getId());
+        friend.getFriends().remove(user.getId());
+    }
+
+    public List<User> getFriends(long id) {
+        User user = userStorage.get(id);
+        return user.getFriends().stream().map(friend -> userStorage.get(friend)).collect(Collectors.toList());
+    }
+
+    public List<User> getCommonFriends(long id, long otherId) {
+        User user = userStorage.get(id);
+        User other = userStorage.get(otherId);
+        List<Long> collect = user.getFriends()
+                .stream()
+                .filter(user1 -> other.getFriends().contains(user1))
+                .toList();
+        return collect.stream().map(friend -> userStorage.get(friend)).collect(Collectors.toList());
     }
 
     public void clear() {
-        users.clear();
-    }
-
-    private long getNextId() {
-        long currentMaxId = users.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+        userStorage.clear();
     }
 }
