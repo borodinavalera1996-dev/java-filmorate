@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -20,7 +21,6 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     public User create(User user) {
-        validate(user);
         long id = getNextId();
         user.setId(id);
         users.put(id, user);
@@ -28,21 +28,10 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User get(long id) {
+    public Optional<User> get(long id) {
         if (users.containsKey(id))
-            return users.get(id);
-        throw new NotFoundException();
-    }
-
-    private static void validate(User user) {
-        if (user.getLogin().contains(" ")) {
-            log.error("Логин не может быть пустым и содержать пробелы");
-            throw new ValidationException("Логин не может быть пустым и содержать пробелы");
-        }
-        if (user.getName() == null || user.getName().isBlank()) {
-            log.debug("Имя было пустым");
-            user.setName(user.getLogin());
-        }
+            return Optional.of(users.get(id));
+        return Optional.empty();
     }
 
     public User update(User newUser) {
@@ -54,7 +43,6 @@ public class InMemoryUserStorage implements UserStorage {
             log.error("Пользователь с id = " + newUser.getId() + " не найден");
             throw new NotFoundException("Пользователь с id = " + newUser.getId() + " не найден");
         }
-        validate(newUser);
         User oldUser = users.get(newUser.getId());
         if (!newUser.getEmail().isBlank()) {
             oldUser.setEmail(newUser.getEmail());

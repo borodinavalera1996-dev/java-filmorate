@@ -4,16 +4,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 @SpringBootTest
 public class InMemoryUserStorageTest {
@@ -49,12 +49,6 @@ public class InMemoryUserStorageTest {
     }
 
     @Test
-    public void createUserWhenLoginWithEmptySpace() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "te st", "name", LocalDate.of(1999, 12, 6), null);
-        assertThrows(ValidationException.class, () -> userStorage.create(mockUser));
-    }
-
-    @Test
     public void createUserWhenWithEmptyName() throws Exception {
         User mockUser = new User(1L, "test@fg.ru", "lsls", "", LocalDate.of(1999, 12, 6), null);
         userStorage.create(mockUser);
@@ -69,13 +63,8 @@ public class InMemoryUserStorageTest {
         User mockUser = new User(1L, "test@fg.ru", "lsls", "ss", LocalDate.of(1999, 12, 6), null);
         userStorage.create(mockUser);
 
-        User user = userStorage.get(1L);
-        assertEquals(mockUser, user);
-    }
-
-    @Test
-    public void getUserNotFound() throws Exception {
-        assertThrows(NotFoundException.class, () -> userStorage.get(1L));
+        Optional<User> user = userStorage.get(1L);
+        assertEquals(mockUser, user.get());
     }
 
     @Test

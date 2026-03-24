@@ -37,12 +37,6 @@ public class InMemoryFilmStorageTest {
     }
 
     @Test
-    public void createOldFilm() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1799, 12, 6), 100L, null);
-        assertThrows(ValidationException.class, () -> filmStorage.create(mockFilm));
-    }
-
-    @Test
     public void updateFilm() throws Exception {
         Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, null);
         filmStorage.create(mockFilm);
@@ -63,14 +57,6 @@ public class InMemoryFilmStorageTest {
     @Test
     public void updateFilmWithoutId() throws Exception {
         Film updateFilm = new Film(null, "test", "test789", LocalDate.of(1999, 12, 6), 100L, null);
-        assertThrows(ValidationException.class, () -> filmStorage.update(updateFilm));
-    }
-
-    @Test
-    public void updateOldFilm() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, null);
-        filmStorage.create(mockFilm);
-        Film updateFilm = new Film(1L, "test", "testtest", LocalDate.of(1799, 12, 6), 100L, null);
         assertThrows(ValidationException.class, () -> filmStorage.update(updateFilm));
     }
 

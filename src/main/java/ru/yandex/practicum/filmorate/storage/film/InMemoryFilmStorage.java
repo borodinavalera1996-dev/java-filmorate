@@ -6,14 +6,12 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
-    public static final LocalDate DATE_OF_FIRST_FILM = LocalDate.of(1895, 12, 28);
     private final Map<Long, Film> films = new HashMap<>();
 
     @Override
@@ -23,7 +21,6 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film create(Film film) {
-        validateFilm(film);
         long id = getNextId();
         film.setId(id);
         films.put(id, film);
@@ -40,7 +37,6 @@ public class InMemoryFilmStorage implements FilmStorage {
             log.error("Фильм с id = " + newFilm.getId() + " не найден");
             throw new NotFoundException("Фильм с id = " + newFilm.getId() + " не найден");
         }
-        validateFilm(newFilm);
         Film oldFilm = films.get(newFilm.getId());
         if (newFilm.getName() != null && !newFilm.getName().isBlank()) {
             oldFilm.setName(newFilm.getName());
@@ -51,6 +47,13 @@ public class InMemoryFilmStorage implements FilmStorage {
         oldFilm.setDuration(newFilm.getDuration());
         oldFilm.setReleaseDate(newFilm.getReleaseDate());
         return oldFilm;
+    }
+
+    @Override
+    public Optional<Film> get(long id) {
+        if (films.containsKey(id))
+            return Optional.of(films.get(id));
+        return Optional.empty();
     }
 
     @Override
@@ -78,13 +81,6 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public void clear() {
         films.clear();
-    }
-
-    private static void validateFilm(Film film) {
-        if (DATE_OF_FIRST_FILM.isAfter(film.getReleaseDate())) {
-            log.error("Дата релиза — не раньше 28 декабря 1895 года.");
-            throw new ValidationException("Дата релиза — не раньше 28 декабря 1895 года.");
-        }
     }
 
     private long getNextId() {

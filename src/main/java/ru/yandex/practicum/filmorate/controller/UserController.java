@@ -4,11 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -76,24 +72,5 @@ public class UserController {
         User returnUser = userService.update(newUser);
         log.trace("With data: " + returnUser.toString());
         return returnUser;
-    }
-
-    @ExceptionHandler(NotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ResponseEntity<String> handleNotFoundException(NotFoundException e) {
-        return new ResponseEntity<>("{\"message\": \"User not found: " + e.getMessage() + "\"}", HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler({ValidationException.class, jakarta.validation.ValidationException.class, MethodArgumentNotValidException.class})
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<String> handleValidationException(Exception e) {
-        return new ResponseEntity<>("{\"message\": \"" + e.getMessage() + "\"}", HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(value = {Exception.class})
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseEntity<String> handleGenericException(Exception ex) {
-        // Fallback handler for any other unhandled exception
-        return new ResponseEntity<>("Internal Server Error " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
