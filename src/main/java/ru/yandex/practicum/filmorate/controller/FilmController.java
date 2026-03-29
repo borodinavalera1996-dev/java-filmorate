@@ -43,4 +43,22 @@ public class FilmController {
         log.trace("With data: " + returnFilm.toString());
         return returnFilm;
     }
+
+    @PutMapping(path = "{id}/like/{userId}")
+    public void setLike(@PathVariable long id, @PathVariable long userId) {
+        log.info("Method setLike was called.");
+        filmService.setLike(id, userId);
+    }
+
+    @DeleteMapping(path = "{id}/like/{userId}")
+    public void deleteLike(@PathVariable long id, @PathVariable long userId) {
+        log.info("Method deleteLike was called.");
+        filmService.deleteLike(id, userId);
+    }
+
+    @GetMapping(path = "/popular")
+    public List<Film> getTopFilms(@RequestParam(defaultValue = "10") long count) {
+        log.info("Method getTopFilms was called.");
+        return filmService.getTopFilms(count);
+    }
 }

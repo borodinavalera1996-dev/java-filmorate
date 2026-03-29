@@ -25,6 +25,36 @@ public class UserController {
         return new ArrayList<>(userService.findAll());
     }
 
+    @GetMapping(path = "/{id}")
+    public User getUser(@PathVariable long id) {
+        log.info("Method getUser was called.");
+        return userService.getUser(id);
+    }
+
+    @PutMapping(path = "/{id}/friends/{friendId}")
+    public User addFriend(@PathVariable long id, @PathVariable long friendId) {
+        log.info("Method addFriend was called.");
+        return userService.addFriend(id, friendId);
+    }
+
+    @DeleteMapping(path = "/{id}/friends/{friendId}")
+    public void deleteFriend(@PathVariable long id, @PathVariable long friendId) {
+        log.info("Method deleteFriend was called.");
+        userService.deleteFriend(id, friendId);
+    }
+
+    @GetMapping(path = "/{id}/friends")
+    public List<User> getFriends(@PathVariable long id) {
+        log.info("Method getFriends was called.");
+        return userService.getFriends(id);
+    }
+
+    @GetMapping(path = "/{id}/friends/common/{otherId}")
+    public List<User> getCommonFriends(@PathVariable long id, @PathVariable long otherId) {
+        log.info("Method getFriends was called.");
+        return userService.getCommonFriends(id, otherId);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public User create(@Valid @RequestBody User user) {

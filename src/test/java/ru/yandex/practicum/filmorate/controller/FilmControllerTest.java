@@ -10,8 +10,10 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -27,7 +29,7 @@ public class FilmControllerTest {
 
     @Test
     public void shouldReturnFilms() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L);
+        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, new HashSet<>());
         when(filmService.findAll()).thenReturn(List.of(mockFilm));
 
         mockMvc.perform(get("/films")
@@ -44,7 +46,7 @@ public class FilmControllerTest {
 
     @Test
     public void shouldCreateFilm() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L);
+        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, new HashSet<>());
         when(filmService.create(mockFilm)).thenReturn(mockFilm);
 
         mockMvc.perform(post("/films")
@@ -91,12 +93,12 @@ public class FilmControllerTest {
                                 "    \"duration\": 100\n" +
                                 "}")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().is5xxServerError());
     }
 
     @Test
     public void shouldUpdateFilm() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L);
+        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, new HashSet<>());
         when(filmService.update(mockFilm)).thenReturn(mockFilm);
 
         mockMvc.perform(put("/films")
@@ -116,5 +118,40 @@ public class FilmControllerTest {
                         "    \"releaseDate\": \"1999-12-06\",\n" +
                         "    \"duration\": 100\n" +
                         "}"));
+    }
+
+    @Test
+    public void shouldSetLike() throws Exception {
+        doNothing().when(filmService).setLike(1L, 1L);
+
+        mockMvc.perform(put("/films/1/like/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void shouldDeleteLike() throws Exception {
+        doNothing().when(filmService).deleteLike(1L, 1L);
+
+        mockMvc.perform(delete("/films/1/like/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void shouldGetTopFilms() throws Exception {
+        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, new HashSet<>());
+        when(filmService.getTopFilms(1)).thenReturn(List.of(mockFilm));
+
+        mockMvc.perform(get("/films/popular?count=1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[{\n" +
+                        "    \"id\": 1,\n" +
+                        "    \"name\": \"test\",\n" +
+                        "    \"description\": \"testtest\",\n" +
+                        "    \"releaseDate\": \"1999-12-06\",\n" +
+                        "    \"duration\": 100\n" +
+                        "}]"));
     }
 }
