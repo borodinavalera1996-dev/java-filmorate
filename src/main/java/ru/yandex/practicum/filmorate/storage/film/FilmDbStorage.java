@@ -19,7 +19,6 @@ public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
     private static final String FIND_ALL_QUERY = "SELECT f.*, m.name AS mpa_name " +
             "FROM films f " +
             "LEFT JOIN mpas m ON f.mpa_id = m.id";
-    ;
     private static final String FIND_BY_ID_QUERY = "SELECT f.*, m.name AS mpa_name" +
             " FROM films f" +
             " LEFT JOIN mpas m ON f.mpa_id = m.id\n" +
