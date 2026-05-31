@@ -25,13 +25,13 @@ public class NewFilmRequest {
     @Positive
     private Long duration;
     @NotNull
-    private Long mpa_id;
+    private Long mpa;
     private Set<Long> genres;
 
     @JsonSetter("mpa")
     public void setMpaFromObject(Map<String, Object> mpa) {
         if (mpa != null && mpa.containsKey("id")) {
-            this.mpa_id = Long.valueOf(mpa.get("id").toString());
+            this.mpa = Long.valueOf(mpa.get("id").toString());
         }
     }
 

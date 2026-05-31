@@ -19,9 +19,9 @@ public class FilmMapper {
         film.setDuration(request.getDuration());
         film.setDescription(request.getDescription());
         film.setReleaseDate(request.getReleaseDate());
-        if (request.getMpa_id() != null) {
+        if (request.getMpa() != null) {
             Mpa mpa = new Mpa();
-            mpa.setId(request.getMpa_id());
+            mpa.setId(request.getMpa());
             film.setMpa(mpa);
         }
         if (request.getGenres() != null) {
