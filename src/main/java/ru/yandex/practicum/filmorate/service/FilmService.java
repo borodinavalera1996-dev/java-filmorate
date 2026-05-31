@@ -3,10 +3,18 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dto.film.FilmDto;
+import ru.yandex.practicum.filmorate.dto.film.GenreDto;
+import ru.yandex.practicum.filmorate.dto.film.NewFilmRequest;
+import ru.yandex.practicum.filmorate.dto.film.UpdateFilmRequest;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
@@ -14,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -23,41 +32,67 @@ public class FilmService {
 
     private FilmStorage filmStorage;
     private UserService userService;
+    private MpaService mpaService;
+    private GenreService genreService;
 
-    private static void validateFilm(Film film) {
+    private void validateFilm(Film film) {
         if (DATE_OF_FIRST_FILM.isAfter(film.getReleaseDate())) {
             log.error("Дата релиза — не раньше 28 декабря 1895 года.");
             throw new ValidationException("Дата релиза — не раньше 28 декабря 1895 года.");
         }
+        if (film.getMpa() != null) {
+            Mpa mpaId = film.getMpa();
+            mpaService.getMpa(mpaId.getId());
+        }
+
+        if (film.getGenres() != null) {
+            for (Genre genre : film.getGenres()) {
+                genreService.getGenre(genre.getId());
+            }
+        }
     }
 
     @Autowired
-    public FilmService(FilmStorage filmStorage, UserService userService) {
+    public FilmService(@Qualifier("filmDb") FilmStorage filmStorage, UserService userService,
+                       MpaService mpaService, GenreService genreService) {
         this.filmStorage = filmStorage;
         this.userService = userService;
+        this.mpaService = mpaService;
+        this.genreService = genreService;
     }
 
-    public Collection<Film> findAll() {
+    public Collection<FilmDto> findAll() {
         log.debug("findAll start");
-        Collection<Film> all = filmStorage.findAll();
-        log.trace(all.toString());
-        return all;
+        return filmStorage.findAll()
+                .stream()
+                .map(FilmMapper::mapToFilmDto)
+                .collect(Collectors.toList());
     }
 
-    public Film create(Film film) {
-        log.debug("create start with {}", film);
+    public FilmDto create(NewFilmRequest request) {
+        log.debug("create start with {}", request);
+        Film film = FilmMapper.mapToFilm(request);
         validateFilm(film);
         Film res = filmStorage.create(film);
         log.trace(res.toString());
-        return res;
+        return FilmMapper.mapToFilmDto(res);
     }
 
-    public Film update(Film newFilm) {
+    public FilmDto update(UpdateFilmRequest newFilm) {
         log.debug("update start with {}", newFilm);
-        validateFilm(newFilm);
-        Film res = filmStorage.update(newFilm);
+        Film oldFilm = getFilm(newFilm.getId());
+        Film film = FilmMapper.updateFilmFields(oldFilm, newFilm);
+        validateFilm(film);
+        Film res = filmStorage.update(film);
         log.trace(res.toString());
-        return res;
+        return FilmMapper.mapToFilmDto(res);
+    }
+
+    public FilmDto getFilmDto(long id) {
+        log.debug("getFilm start with {}", id);
+        Optional<Film> res = filmStorage.get(id);
+        log.trace(res.toString());
+        return FilmMapper.mapToFilmDto(res.orElseThrow(() -> new NotFoundException("Фильм с id " + id + " не найден")));
     }
 
     public Film getFilm(long id) {
@@ -83,12 +118,14 @@ public class FilmService {
         log.debug("deleteLike finish with id - {}, userId - {}", id, userId);
     }
 
-    public List<Film> getTopFilms(long count) {
+    public List<FilmDto> getTopFilms(long count) {
         log.debug("getTopFilms start with count - {}", count);
         if (count > 0) {
             List<Film> topFilms = filmStorage.getTopFilms(count);
             log.trace(topFilms.toString());
-            return topFilms;
+            return topFilms.stream()
+                    .map(FilmMapper::mapToFilmDto)
+                    .collect(Collectors.toList());
         }
         return Collections.EMPTY_LIST;
     }

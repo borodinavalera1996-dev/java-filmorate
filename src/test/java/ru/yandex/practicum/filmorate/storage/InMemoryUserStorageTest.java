@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.storage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 public class InMemoryUserStorageTest {
 
     @Autowired
+    @Qualifier("userInMemory")
     public UserStorage userStorage;
 
     @BeforeEach

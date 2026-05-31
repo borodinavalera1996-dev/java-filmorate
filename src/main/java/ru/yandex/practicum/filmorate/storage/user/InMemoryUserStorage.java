@@ -6,13 +6,10 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
-@Component
+@Component("userInMemory")
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Long, User> users = new HashMap<>();
 
@@ -57,6 +54,26 @@ public class InMemoryUserStorage implements UserStorage {
 
     public void clear() {
         users.clear();
+    }
+
+    @Override
+    public void addFriend(long userId, long friendId) {
+
+    }
+
+    @Override
+    public void deleteFriend(long userId, long friendId) {
+
+    }
+
+    @Override
+    public List<Long> getCommonFriends(long id, long otherId) {
+        return null;
+    }
+
+    @Override
+    public List<Long> getFriends(long id) {
+        return null;
     }
 
     private long getNextId() {

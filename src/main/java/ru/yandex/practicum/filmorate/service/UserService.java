@@ -3,15 +3,20 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dto.NewUserRequest;
+import ru.yandex.practicum.filmorate.dto.UpdateUserRequest;
+import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.mapper.UserMapper;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -21,7 +26,7 @@ public class UserService {
     private UserStorage userStorage;
 
     @Autowired
-    public UserService(UserStorage userStorage) {
+    public UserService(@Qualifier("userDb") UserStorage userStorage) {
         this.userStorage = userStorage;
     }
 
@@ -36,91 +41,79 @@ public class UserService {
         }
     }
 
-    public User create(User user) {
-        log.debug("create start with {}", user);
+    public UserDto create(NewUserRequest request) {
+        log.debug("create start with {}", request);
+        User user = UserMapper.mapToUser(request);
         validate(user);
-        User res = userStorage.create(user);
-        log.trace(res.toString());
-        return res;
+        user = userStorage.create(user);
+        log.trace(user.toString());
+        return UserMapper.mapToUserDto(user);
     }
 
-    public User getUser(long id) {
-        log.debug("getUser start with {}", id);
-        Optional<User> res = userStorage.get(id);
-        log.trace(res.toString());
-        return res.orElseThrow(() -> new NotFoundException("Пользователь с id " + id + " не найден"));
+    public UserDto getUser(long userId) {
+        log.debug("getUser start with {}", userId);
+        return userStorage.get(userId)
+                .map(UserMapper::mapToUserDto)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден с ID: " + userId));
     }
 
-    public Collection<User> findAll() {
+    public Collection<UserDto> findAll() {
         log.debug("findAll start");
-        Collection<User> all = userStorage.findAll();
-        log.trace(all.toString());
-        return all;
+        return userStorage.findAll()
+                .stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toList());
     }
 
-    public User update(User newUser) {
-        log.debug("update start with {}", newUser);
-        validate(newUser);
-        User res = userStorage.update(newUser);
-        log.trace(res.toString());
-        return res;
+    public UserDto update(UpdateUserRequest request) {
+        User updatedUser = userStorage.get(request.getId())
+                .map(user -> UserMapper.updateUserFields(user, request))
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        updatedUser = userStorage.update(updatedUser);
+        return UserMapper.mapToUserDto(updatedUser);
     }
 
-    public User addFriend(long id, long friendId) {
+    public void addFriend(long id, long friendId) {
         log.debug("addFriend start with id - {}, friendId - {}", id, friendId);
-        User user = getUser(id);
-        User friend = getUser(friendId);
+        UserDto user = getUser(id);
+        UserDto friend = getUser(friendId);
         if (!user.equals(friend)) {
-            user.getFriends().add(friend.getId());
-            friend.getFriends().add(user.getId());
+            userStorage.addFriend(id, friendId);
         }
         log.trace(user.toString());
         log.trace(friend.toString());
-        return user;
     }
 
     public void deleteFriend(long id, long friendId) {
         log.debug("deleteFriend start with id - {}, friendId - {}", id, friendId);
-        User user = getUser(id);
-        User friend = getUser(friendId);
+        UserDto user = getUser(id);
+        UserDto friend = getUser(friendId);
         if (!user.equals(friend)) {
-            user.getFriends().remove(friend.getId());
-            friend.getFriends().remove(user.getId());
+            userStorage.deleteFriend(id, friendId);
         }
         log.trace(user.toString());
         log.trace(friend.toString());
     }
 
-    public List<User> getFriends(long id) {
+    public List<UserDto> getFriends(long id) {
         log.debug("getFriends start with id - {}", id);
-        User user = getUser(id);
-        List<User> users = user.getFriends()
-                .stream()
+        getUser(id);
+        List<Long> friends = userStorage.getFriends(id);
+        List<UserDto> fullFiends = friends.stream()
                 .map(this::getUser)
                 .toList();
-        log.trace(users.toString());
-        return users;
+        log.trace(fullFiends.toString());
+        return fullFiends;
     }
 
-    public List<User> getCommonFriends(long id, long otherId) {
+    public List<UserDto> getCommonFriends(long id, long otherId) {
         log.debug("getCommonFriends start with id - {}, otherId - {}", id, otherId);
-        User user = getUser(id);
-        User other = getUser(otherId);
-        List<Long> collect;
-        if (!user.equals(other)) {
-            collect = user.getFriends()
-                    .stream()
-                    .filter(user1 -> other.getFriends().contains(user1))
-                    .toList();
-        } else {
-            collect = user.getFriends().stream().toList();
-        }
-        List<User> users = collect
-                .stream()
+        List<Long> friends = userStorage.getCommonFriends(id, otherId);
+        List<UserDto> fullFiends = friends.stream()
                 .map(this::getUser)
                 .toList();
-        log.trace(users.toString());
-        return users;
+        log.trace(fullFiends.toString());
+        return fullFiends;
     }
 
     public void clear() {

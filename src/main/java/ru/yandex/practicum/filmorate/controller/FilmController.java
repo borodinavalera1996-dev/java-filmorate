@@ -5,7 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.dto.UserDto;
+import ru.yandex.practicum.filmorate.dto.film.FilmDto;
+import ru.yandex.practicum.filmorate.dto.film.NewFilmRequest;
+import ru.yandex.practicum.filmorate.dto.film.UpdateFilmRequest;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.ArrayList;
@@ -20,26 +23,32 @@ public class FilmController {
     private final FilmService filmService;
 
     @GetMapping()
-    public List<Film> getFilms() {
+    public List<FilmDto> getFilms() {
         log.info("Method getFilms was called.");
         return new ArrayList<>(filmService.findAll());
     }
 
+    @GetMapping(path = "/{id}")
+    public FilmDto getFilm(@PathVariable long id) {
+        log.info("Method getFilm was called.");
+        return filmService.getFilmDto(id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Film create(@Valid @RequestBody Film film) {
+    public FilmDto create(@Valid @RequestBody NewFilmRequest film) {
         log.info("Method create Film was called.");
         log.trace("With data: " + film.toString());
-        Film returnFilm = filmService.create(film);
+        FilmDto returnFilm = filmService.create(film);
         log.trace("With data: " + returnFilm.toString());
         return returnFilm;
     }
 
     @PutMapping
-    public Film update(@Valid @RequestBody Film newFilm) {
+    public FilmDto update(@Valid @RequestBody UpdateFilmRequest newFilm) {
         log.info("Method update Film was called.");
         log.trace("With data: " + newFilm.toString());
-        Film returnFilm = filmService.update(newFilm);
+        FilmDto returnFilm = filmService.update(newFilm);
         log.trace("With data: " + returnFilm.toString());
         return returnFilm;
     }
@@ -57,7 +66,7 @@ public class FilmController {
     }
 
     @GetMapping(path = "/popular")
-    public List<Film> getTopFilms(@RequestParam(defaultValue = "10") long count) {
+    public List<FilmDto> getTopFilms(@RequestParam(defaultValue = "10") long count) {
         log.info("Method getTopFilms was called.");
         return filmService.getTopFilms(count);
     }
