@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.BaseStorage;
 
 import java.sql.PreparedStatement;
@@ -19,7 +18,8 @@ import java.util.*;
 public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
     private static final String FIND_ALL_QUERY = "SELECT f.*, m.name AS mpa_name " +
             "FROM films f " +
-            "LEFT JOIN mpas m ON f.mpa_id = m.id";;
+            "LEFT JOIN mpas m ON f.mpa_id = m.id";
+    ;
     private static final String FIND_BY_ID_QUERY = "SELECT f.*, m.name AS mpa_name" +
             " FROM films f" +
             " LEFT JOIN mpas m ON f.mpa_id = m.id\n" +
@@ -150,10 +150,11 @@ public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
         });
     }
 
-    private Set<Genre> getGenresByFilmId(Long filmId) {    String sqlGenres = "SELECT fg.genre_id, g.name " +
-            "FROM film_genres fg " +
-            "JOIN genres g ON fg.genre_id = g.id " +
-            "WHERE fg.film_id = ?";
+    private Set<Genre> getGenresByFilmId(Long filmId) {
+        String sqlGenres = "SELECT fg.genre_id, g.name " +
+                "FROM film_genres fg " +
+                "JOIN genres g ON fg.genre_id = g.id " +
+                "WHERE fg.film_id = ?";
 
         return new HashSet<>(jdbc.query(sqlGenres, (rs, rowNum) -> {
             Genre genre = new Genre();

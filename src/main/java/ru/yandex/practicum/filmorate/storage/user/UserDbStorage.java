@@ -12,7 +12,6 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -65,10 +64,12 @@ public class UserDbStorage extends BaseStorage<User> implements UserStorage {
             return ps;
         }, keyHolder);
     }
+
     @Override
     public void deleteFriend(long userId, long friendId) {
         jdbc.update(DELETE_FRIEND_QUERY, userId, friendId);
     }
+
     @Override
     public List<Long> getFriends(long id) {
         List<Long> users = jdbc.queryForList(GET_FRIENDS_QUERY, Long.class, id);
