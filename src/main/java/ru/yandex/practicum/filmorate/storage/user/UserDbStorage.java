@@ -28,13 +28,15 @@ public class UserDbStorage extends BaseStorage<User> implements UserStorage {
 
     private static final String INSERT_FRIEND_QUERY = "INSERT INTO user_friends(user_id, friend_id) " +
             "VALUES (?, ?)";
-    private static final String GET_FRIENDS_QUERY = "SELECT friend_id " +
-            "FROM user_friends " +
-            "WHERE user_id = ?";
-    private static final String GET_COMMON_FRIENDS_QUERY = "SELECT f1.friend_id " +
-            " FROM user_friends f1 " +
-            " JOIN user_friends f2 ON f1.friend_id = f2.friend_id " +
-            " WHERE f1.user_id = ? AND f2.user_id = ?";
+    private static final String GET_FRIENDS_QUERY = "SELECT u.* " +
+            "FROM users u " +
+            "JOIN user_friends f ON u.id = f.friend_id " +
+            "WHERE f.user_id = ?";
+    private static final String GET_COMMON_FRIENDS_QUERY = "SELECT u.* " +
+            "FROM users u " +
+            "JOIN user_friends f1 ON u.id = f1.friend_id " +
+            "JOIN user_friends f2 ON f1.friend_id = f2.friend_id " +
+            "WHERE f1.user_id = ? AND f2.user_id = ?";
 
     public UserDbStorage(JdbcTemplate jdbc, RowMapper<User> mapper) {
         super(jdbc, mapper);
@@ -71,16 +73,13 @@ public class UserDbStorage extends BaseStorage<User> implements UserStorage {
     }
 
     @Override
-    public List<Long> getFriends(long id) {
-        List<Long> users = jdbc.queryForList(GET_FRIENDS_QUERY, Long.class, id);
-
-        return users;
+    public List<User> getFriends(long id) {
+        return findMany(GET_FRIENDS_QUERY, id);
     }
 
     @Override
-    public List<Long> getCommonFriends(long id, long otherId) {
-        List<Long> users = jdbc.queryForList(GET_COMMON_FRIENDS_QUERY, Long.class, id, otherId);
-        return users;
+    public List<User> getCommonFriends(long id, long otherId) {
+        return findMany(GET_COMMON_FRIENDS_QUERY, id, otherId);
     }
 
     @Override

@@ -7,9 +7,10 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dto.film.GenreDto;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.mapper.GenreMapper;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.GenreStorage;
 
-import java.util.Collection;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,10 +32,25 @@ public class GenreService {
                 .collect(Collectors.toList());
     }
 
+    public List<Genre> findAllByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Long> uniqueIds = new HashSet<>(ids);
+        List<Genre> foundGenres = genreStorage.findAllByIds(uniqueIds);
+
+        if (foundGenres.size() < uniqueIds.size()) {
+            throw new NotFoundException("Один или несколько жанров не найдены в базе данных.");
+        }
+
+        return foundGenres;
+    }
+
     public GenreDto getGenre(long id) {
         log.debug("getGenre start with {}", id);
         return genreStorage.get(id)
                 .map(GenreMapper::mapToGenreDto)
-                .orElseThrow(() -> new NotFoundException("Жвнр не найден с ID: " + id));
+                .orElseThrow(() -> new NotFoundException("Жанр не найден с ID: " + id));
     }
 }

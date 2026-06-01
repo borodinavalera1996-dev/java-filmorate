@@ -98,22 +98,22 @@ public class UserService {
     public List<UserDto> getFriends(long id) {
         log.debug("getFriends start with id - {}", id);
         getUser(id);
-        List<Long> friends = userStorage.getFriends(id);
-        List<UserDto> fullFiends = friends.stream()
-                .map(this::getUser)
-                .toList();
-        log.trace(fullFiends.toString());
-        return fullFiends;
+        List<User> friends = userStorage.getFriends(id);
+        log.trace(friends.toString());
+        return friends
+                .stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toList());
     }
 
     public List<UserDto> getCommonFriends(long id, long otherId) {
         log.debug("getCommonFriends start with id - {}, otherId - {}", id, otherId);
-        List<Long> friends = userStorage.getCommonFriends(id, otherId);
-        List<UserDto> fullFiends = friends.stream()
-                .map(this::getUser)
-                .toList();
-        log.trace(fullFiends.toString());
-        return fullFiends;
+        List<User> friends = userStorage.getCommonFriends(id, otherId);
+        log.trace(friends.toString());
+        return friends
+                .stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toList());
     }
 
     public void clear() {

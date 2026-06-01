@@ -17,10 +17,7 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -39,15 +36,21 @@ public class FilmService {
             log.error("Дата релиза — не раньше 28 декабря 1895 года.");
             throw new ValidationException("Дата релиза — не раньше 28 декабря 1895 года.");
         }
-        if (film.getMpa() != null) {
-            Mpa mpaId = film.getMpa();
-            mpaService.getMpa(mpaId.getId());
+        if (film.getMpa() == null) {
+            log.error("Рейтинг MPA должен быть установлен.");
+            throw new NotFoundException("Рейтинг MPA должен быть установлен.");
         }
+        Mpa mpaId = film.getMpa();
+        mpaService.getMpa(mpaId.getId());
 
         if (film.getGenres() != null) {
-            for (Genre genre : film.getGenres()) {
-                genreService.getGenre(genre.getId());
-            }
+            List<Long> genreIds = film.getGenres().stream()
+                    .map(Genre::getId)
+                    .collect(Collectors.toList());
+
+            List<Genre> validatedGenres = genreService.findAllByIds(genreIds);
+
+            film.setGenres(Set.copyOf(validatedGenres));
         }
     }
 

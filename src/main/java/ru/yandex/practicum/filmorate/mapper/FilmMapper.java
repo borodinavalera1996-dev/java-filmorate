@@ -8,6 +8,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,7 +32,7 @@ public class FilmMapper {
                         genre.setId(genreId);
                         return genre;
                     })
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
             film.setGenres(genres);
         } else {
             film.setGenres(new HashSet<>());
@@ -61,7 +62,7 @@ public class FilmMapper {
                 gDto.setId(genre.getId());
                 gDto.setName(genre.getName());
                 return gDto;
-            }).collect(Collectors.toSet());
+            }).collect(Collectors.toCollection(LinkedHashSet::new));
             dto.setGenres(genreDtos);
         } else {
             dto.setGenres(new HashSet<>());

@@ -7,8 +7,10 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.BaseStorage;
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
@@ -16,10 +18,7 @@ import java.util.*;
 @Slf4j
 @Component("filmDb")
 public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
-    private static final String FIND_ALL_QUERY = "SELECT f.*, m.name AS mpa_name " +
-            "FROM films f " +
-            "LEFT JOIN mpas m ON f.mpa_id = m.id";
-    private static final String FIND_BY_ID_QUERY = "SELECT f.*, m.name AS mpa_name" +
+    private static final String FIND_BY_ID_QUERY = "SELECT f.*, m.name AS mpa_name " +
             " FROM films f" +
             " LEFT JOIN mpas m ON f.mpa_id = m.id\n" +
             " WHERE f.id = ?";
@@ -50,10 +49,54 @@ public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
         super(jdbc, mapper);
     }
 
-
     @Override
     public Collection<Film> findAll() {
-        return findMany(FIND_ALL_QUERY);
+        String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, " +
+                "g.id AS genre_id, g.name AS genre_name, m.name AS mpa_name, m.id as mpa_id " +
+                "FROM films f " +
+                " LEFT JOIN mpas m ON f.mpa_id = m.id " +
+                "LEFT JOIN film_genres fg ON f.id = fg.film_id " +
+                "LEFT JOIN genres g ON fg.genre_id = g.id " +
+                "ORDER BY f.id, g.id";
+
+        return jdbc.query(sql, rs -> {
+            Map<Long, Film> filmMap = new LinkedHashMap<>();
+
+            while (rs.next()) {
+                long filmId = rs.getLong("id");
+
+                Film film = filmMap.computeIfAbsent(filmId, id -> {
+                    try {
+                        Film filmNew = new Film();
+                        filmNew.setId(rs.getLong("id"));
+                        filmNew.setName(rs.getString("name"));
+                        filmNew.setDescription(rs.getString("description"));
+                        long mpaId = rs.getLong("mpa_id");
+                        String mpaName = rs.getString("mpa_name");
+                        Mpa mpa = new Mpa(mpaId, mpaName);
+                        filmNew.setMpa(mpa);
+                        filmNew.setDuration(rs.getLong("duration"));
+
+                        Date releaseDate = rs.getDate("release_date");
+                        filmNew.setReleaseDate(releaseDate.toLocalDate());
+                        filmNew.setGenres(new LinkedHashSet<>());
+                        return filmNew;
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                long genreId = rs.getLong("genre_id");
+                if (genreId > 0) {
+                    Genre genre = new Genre();
+                    genre.setId(genreId);
+                    genre.setName(rs.getString("genre_name"));
+                    film.getGenres().add(genre);
+                }
+            }
+
+            return filmMap.values();
+        });
     }
 
     @Override
@@ -68,7 +111,6 @@ public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
         );
         film.setId(id);
         saveGenres(id, film.getGenres());
-        saveLikes(id, film.getLikes());
         return film;
     }
 

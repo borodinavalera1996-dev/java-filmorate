@@ -67,12 +67,12 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public List<Long> getCommonFriends(long id, long otherId) {
+    public List<User> getCommonFriends(long id, long otherId) {
         return null;
     }
 
     @Override
-    public List<Long> getFriends(long id) {
+    public List<User> getFriends(long id) {
         return null;
     }
 

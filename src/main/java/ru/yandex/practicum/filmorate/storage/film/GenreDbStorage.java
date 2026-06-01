@@ -7,13 +7,14 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.BaseStorage;
 
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component()
 public class GenreDbStorage extends BaseStorage<Genre> implements GenreStorage {
     private static final String FIND_ALL_QUERY = "SELECT * FROM genres";
+    private static final String FIND_ALL_BY_IDS_QUERY = "SELECT id, name FROM genres WHERE id IN (";
     private static final String FIND_BY_ID_QUERY = "SELECT * " +
             "FROM genres g " +
             "WHERE g.id = ?";
@@ -31,5 +32,22 @@ public class GenreDbStorage extends BaseStorage<Genre> implements GenreStorage {
     public Optional<Genre> get(long id) {
         Optional<Genre> genre = findOne(FIND_BY_ID_QUERY, id);
         return genre;
+    }
+
+    @Override
+    public List<Genre> findAllByIds(Set<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String placeholders = ids.stream()
+                .map(id -> "?")
+                .collect(Collectors.joining(", "));
+
+        String sql = FIND_ALL_BY_IDS_QUERY + placeholders + ") ORDER BY id";
+
+        Object[] params = ids.toArray();
+
+        return findMany(sql, params);
     }
 }
