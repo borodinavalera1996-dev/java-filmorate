@@ -26,9 +26,8 @@ public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
             "VALUES (?, ?, ?, ?, ?)";
     private static final String UPDATE_QUERY = "UPDATE films SET name = ?, description = ?, release_date = ?, mpa_id = ?, duration = ? WHERE id = ?";
     private static final String DELETE_LIKE_QUERY = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
-
-    private static final String INSERT_LIKE_QUERY = "INSERT INTO film_likes(film_id, user_id) " +
-            "VALUES (?, ?)";
+    private static final String INSERT_LIKE_QUERY =
+            "MERGE INTO film_likes (film_id, user_id) KEY(film_id, user_id) VALUES (?, ?)";
     private static final String GET_TOP_FILMS_QUERY = "SELECT \n" +
             "    f.id, \n" +
             "    f.name, \n" +
@@ -79,7 +78,7 @@ public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
 
                         Date releaseDate = rs.getDate("release_date");
                         filmNew.setReleaseDate(releaseDate.toLocalDate());
-                        filmNew.setGenres(new LinkedHashSet<>());
+                        filmNew.setGenres(new ArrayList<>());
                         return filmNew;
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -140,17 +139,15 @@ public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
         return film;
     }
 
-    public void saveGenres(Long filmId, Set<Genre> genreIds) {
+    public void saveGenres(Long filmId, List<Genre> genresList) {
         String sqlDelete = "DELETE FROM film_genres WHERE film_id = ?";
         jdbc.update(sqlDelete, filmId);
 
-        if (genreIds == null || genreIds.isEmpty()) {
+        if (genresList == null || genresList.isEmpty()) {
             return;
         }
 
         String sqlInsert = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-
-        List<Genre> genresList = new ArrayList<>(genreIds);
         jdbc.batchUpdate(sqlInsert, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -191,13 +188,13 @@ public class FilmDbStorage extends BaseStorage<Film> implements FilmStorage {
         });
     }
 
-    private Set<Genre> getGenresByFilmId(Long filmId) {
+    private List<Genre> getGenresByFilmId(Long filmId) {
         String sqlGenres = "SELECT fg.genre_id, g.name " +
                 "FROM film_genres fg " +
                 "JOIN genres g ON fg.genre_id = g.id " +
                 "WHERE fg.film_id = ?";
 
-        return new HashSet<>(jdbc.query(sqlGenres, (rs, rowNum) -> {
+        return new ArrayList<>(jdbc.query(sqlGenres, (rs, rowNum) -> {
             Genre genre = new Genre();
             genre.setId(rs.getLong("genre_id"));
             genre.setName(rs.getString("name"));

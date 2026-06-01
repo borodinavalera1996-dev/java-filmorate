@@ -6,6 +6,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,7 +27,7 @@ public class NewFilmRequest {
     private Long duration;
     @NotNull
     private Long mpa;
-    private Set<Long> genres;
+    private List<Long> genres;
 
     @JsonSetter("mpa")
     public void setMpaFromObject(Map<String, Object> mpa) {
@@ -41,7 +42,7 @@ public class NewFilmRequest {
             this.genres = genresList.stream()
                     .filter(g -> g.containsKey("id"))
                     .map(g -> Long.valueOf(g.get("id").toString()))
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toList());
         }
     }
 }

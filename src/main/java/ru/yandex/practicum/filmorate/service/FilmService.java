@@ -17,7 +17,10 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -50,7 +53,7 @@ public class FilmService {
 
             List<Genre> validatedGenres = genreService.findAllByIds(genreIds);
 
-            film.setGenres(Set.copyOf(validatedGenres));
+            film.setGenres(List.copyOf(validatedGenres));
         }
     }
 

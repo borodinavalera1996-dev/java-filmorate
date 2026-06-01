@@ -6,7 +6,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.Set;
+import java.util.List;
 
 @Data
 public class UpdateFilmRequest {
@@ -26,5 +26,5 @@ public class UpdateFilmRequest {
     @NotNull
     @Valid
     private MpaDto mpa;
-    private Set<Long> genres;
+    private List<Long> genres;
 }

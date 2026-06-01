@@ -7,10 +7,9 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FilmMapper {
@@ -26,16 +25,16 @@ public class FilmMapper {
             film.setMpa(mpa);
         }
         if (request.getGenres() != null) {
-            Set<Genre> genres = request.getGenres().stream()
+            List<Genre> genres = request.getGenres().stream()
                     .map(genreId -> {
                         Genre genre = new Genre();
                         genre.setId(genreId);
                         return genre;
                     })
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
+                    .toList();
             film.setGenres(genres);
         } else {
-            film.setGenres(new HashSet<>());
+            film.setGenres(new ArrayList<>());
         }
         return film;
     }
@@ -57,15 +56,15 @@ public class FilmMapper {
         }
 
         if (film.getGenres() != null) {
-            Set<GenreDto> genreDtos = film.getGenres().stream().map(genre -> {
+            List<GenreDto> genreDtos = film.getGenres().stream().map(genre -> {
                 GenreDto gDto = new GenreDto();
                 gDto.setId(genre.getId());
                 gDto.setName(genre.getName());
                 return gDto;
-            }).collect(Collectors.toCollection(LinkedHashSet::new));
+            }).toList();
             dto.setGenres(genreDtos);
         } else {
-            dto.setGenres(new HashSet<>());
+            dto.setGenres(new ArrayList<>());
         }
         return dto;
     }
@@ -82,16 +81,16 @@ public class FilmMapper {
             film.setMpa(mpa);
         }
         if (request.getGenres() != null) {
-            Set<Genre> genres = request.getGenres().stream()
+            List<Genre> genres = request.getGenres().stream()
                     .map(genreId -> {
                         Genre genre = new Genre();
                         genre.setId(genreId);
                         return genre;
                     })
-                    .collect(Collectors.toSet());
+                    .toList();
             film.setGenres(genres);
         } else {
-            film.setGenres(new HashSet<>());
+            film.setGenres(new ArrayList<>());
         }
         return film;
     }
