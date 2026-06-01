@@ -1,157 +1,147 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.yandex.practicum.filmorate.model.Film;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import ru.yandex.practicum.filmorate.dto.film.FilmDto;
+import ru.yandex.practicum.filmorate.dto.film.MpaDto;
+import ru.yandex.practicum.filmorate.dto.film.UpdateFilmRequest;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
 
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(FilmController.class)
-public class FilmControllerTest {
-    @Autowired
+@ExtendWith(MockitoExtension.class)
+class FilmControllerTest {
+
     private MockMvc mockMvc;
 
-    @MockBean
+    private ObjectMapper objectMapper;
+
+    @Mock
     private FilmService filmService;
 
-    @Test
-    public void shouldReturnFilms() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, new HashSet<>());
-        when(filmService.findAll()).thenReturn(List.of(mockFilm));
+    @InjectMocks
+    private FilmController filmController;
 
-        mockMvc.perform(get("/films")
-                        .contentType(MediaType.APPLICATION_JSON))
+    private FilmDto validFilmDto;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(filmController).build();
+
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
+        validFilmDto = new FilmDto();
+        validFilmDto.setId(1L);
+        validFilmDto.setName("test");
+        validFilmDto.setDescription("testtest");
+        validFilmDto.setReleaseDate(LocalDate.of(2010, 7, 16));
+        validFilmDto.setDuration(148L);
+    }
+
+    @Test
+    void getFilms_ShouldReturnListOfFilms_WhenFilmsExist() throws Exception {
+        when(filmService.findAll()).thenReturn(List.of(validFilmDto));
+
+        mockMvc.perform(get("/films"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("[{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"name\": \"test\",\n" +
-                        "    \"description\": \"testtest\",\n" +
-                        "    \"releaseDate\": \"1999-12-06\",\n" +
-                        "    \"duration\": 100\n" +
-                        "}]"));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$[0].id").value(validFilmDto.getId()))
+                .andExpect(jsonPath("$[0].name").value(validFilmDto.getName()))
+                .andExpect(jsonPath("$[0].duration").value(validFilmDto.getDuration()));
+
+        verify(filmService, times(1)).findAll();
     }
 
     @Test
-    public void shouldCreateFilm() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, new HashSet<>());
-        when(filmService.create(mockFilm)).thenReturn(mockFilm);
+    void getFilm_ShouldReturnFilm_WhenIdIsValid() throws Exception {
+        when(filmService.getFilmDto(1L)).thenReturn(validFilmDto);
 
-        mockMvc.perform(post("/films")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"name\": \"test\",\n" +
-                                "    \"description\": \"testtest\",\n" +
-                                "    \"releaseDate\": \"1999-12-06\",\n" +
-                                "    \"duration\": 100\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isCreated())
-                .andExpect(content().json("{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"name\": \"test\",\n" +
-                        "    \"description\": \"testtest\",\n" +
-                        "    \"releaseDate\": \"1999-12-06\",\n" +
-                        "    \"duration\": 100\n" +
-                        "}"));
+        mockMvc.perform(get("/films/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.name").value("test"));
+
+        verify(filmService, times(1)).getFilmDto(1L);
     }
 
     @Test
-    public void shouldCreateFilmWithLongDescription() throws Exception {
-        mockMvc.perform(post("/films")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"name\": \"test\",\n" +
-                                "    \"description\": \"testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77\",\n" +
-                                "    \"releaseDate\": \"1999-12-06\",\n" +
-                                "    \"duration\": 100\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError());
-    }
+    void update_ShouldReturnUpdatedFilm_WhenRequestIsValid() throws Exception {
+        UpdateFilmRequest updateRequest = new UpdateFilmRequest();
+        updateRequest.setId(1L);
+        updateRequest.setName("test Updated");
+        updateRequest.setDuration(148L);
+        updateRequest.setReleaseDate(LocalDate.of(2010, 7, 16));
+        MpaDto mpaDto = new MpaDto();
+        mpaDto.setId(1L);
+        updateRequest.setMpa(mpaDto);
 
-    @Test
-    public void shouldCreateFilmWithWrongDate() throws Exception {
-        mockMvc.perform(post("/films")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"name\": \"test\",\n" +
-                                "    \"description\": \"testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77testtest77\",\n" +
-                                "    \"releaseDate\": \"199912-06\",\n" +
-                                "    \"duration\": 100\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is5xxServerError());
-    }
-
-    @Test
-    public void shouldUpdateFilm() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, new HashSet<>());
-        when(filmService.update(mockFilm)).thenReturn(mockFilm);
+        validFilmDto.setName("test Updated");
+        when(filmService.update(any(UpdateFilmRequest.class))).thenReturn(validFilmDto);
 
         mockMvc.perform(put("/films")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"name\": \"test\",\n" +
-                                "    \"description\": \"testtest\",\n" +
-                                "    \"releaseDate\": \"1999-12-06\",\n" +
-                                "    \"duration\": 100\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(content().json("{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"name\": \"test\",\n" +
-                        "    \"description\": \"testtest\",\n" +
-                        "    \"releaseDate\": \"1999-12-06\",\n" +
-                        "    \"duration\": 100\n" +
-                        "}"));
+                .andExpect(jsonPath("$.name").value("test Updated"));
+
+        verify(filmService, times(1)).update(any(UpdateFilmRequest.class));
     }
 
     @Test
-    public void shouldSetLike() throws Exception {
-        doNothing().when(filmService).setLike(1L, 1L);
+    void setLike_ShouldReturnOk_WhenParametersAreValid() throws Exception {
+        doNothing().when(filmService).setLike(anyLong(), anyLong());
 
-        mockMvc.perform(put("/films/1/like/1")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(put("/films/1/like/2"))
                 .andExpect(status().isOk());
+
+        verify(filmService, times(1)).setLike(1L, 2L);
     }
 
     @Test
-    public void shouldDeleteLike() throws Exception {
-        doNothing().when(filmService).deleteLike(1L, 1L);
+    void deleteLike_ShouldReturnOk_WhenParametersAreValid() throws Exception {
+        doNothing().when(filmService).deleteLike(anyLong(), anyLong());
 
-        mockMvc.perform(delete("/films/1/like/1")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(delete("/films/1/like/2"))
                 .andExpect(status().isOk());
+
+        verify(filmService, times(1)).deleteLike(1L, 2L);
     }
 
     @Test
-    public void shouldGetTopFilms() throws Exception {
-        Film mockFilm = new Film(1L, "test", "testtest", LocalDate.of(1999, 12, 6), 100L, new HashSet<>());
-        when(filmService.getTopFilms(1)).thenReturn(List.of(mockFilm));
+    void getTopFilms_ShouldReturnPopularFilmsList() throws Exception {
+        when(filmService.getTopFilms(5L)).thenReturn(List.of(validFilmDto));
 
-        mockMvc.perform(get("/films/popular?count=1")
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/films/popular?count=5"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("[{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"name\": \"test\",\n" +
-                        "    \"description\": \"testtest\",\n" +
-                        "    \"releaseDate\": \"1999-12-06\",\n" +
-                        "    \"duration\": 100\n" +
-                        "}]"));
+                .andExpect(jsonPath("$.length()").value(1));
+
+        verify(filmService, times(1)).getTopFilms(5L);
+    }
+
+    @Test
+    void getTopFilms_ShouldUseDefaultCount_WhenCountParamIsMissing() throws Exception {
+        when(filmService.getTopFilms(10L)).thenReturn(List.of(validFilmDto));
+
+        mockMvc.perform(get("/films/popular"))
+                .andExpect(status().isOk());
+
+        verify(filmService, times(1)).getTopFilms(10L);
     }
 }

@@ -12,7 +12,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<String> handleNotFoundException(NotFoundException e) {
-        return new ResponseEntity<>("{\"message\": \"Film not found: " + e.getMessage() + "\"}", HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>("{\"message\": \"Entity not found: " + e.getMessage() + "\"}", HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler({ValidationException.class, jakarta.validation.ValidationException.class, MethodArgumentNotValidException.class})

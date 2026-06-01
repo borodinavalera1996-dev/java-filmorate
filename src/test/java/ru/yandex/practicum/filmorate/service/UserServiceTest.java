@@ -1,156 +1,195 @@
 package ru.yandex.practicum.filmorate.service;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import ru.yandex.practicum.filmorate.dto.NewUserRequest;
+import ru.yandex.practicum.filmorate.dto.UpdateUserRequest;
+import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
-public class UserServiceTest {
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
 
-    @Autowired
-    public UserService userService;
+    private UserService userService;
 
-    @AfterEach
-    public void clearService() {
-        userService.clear();
+    @Mock
+    private UserStorage userStorage;
+
+    private User validUser;
+    private User friendUser;
+
+    @BeforeEach
+    void setUp() {
+        userService = new UserService(userStorage);
+
+        validUser = new User();
+        validUser.setId(1L);
+        validUser.setEmail("user@yandex.ru");
+        validUser.setLogin("user_login");
+        validUser.setName("UserName");
+        validUser.setBirthday(LocalDate.of(2000, 1, 1));
+
+        friendUser = new User();
+        friendUser.setId(2L);
+        friendUser.setEmail("friend@yandex.ru");
+        friendUser.setLogin("friend_login");
+        friendUser.setName("FriendName");
+        friendUser.setBirthday(LocalDate.of(2001, 2, 2));
     }
 
     @Test
-    public void shouldReturnUsers() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser);
+    void findAll_ShouldReturnMappedUserDtos() {
+        when(userStorage.findAll()).thenReturn(List.of(validUser));
 
-        Collection<User> all = userService.findAll();
-        assertEquals(1, all.size());
-        assertIterableEquals(List.of(mockUser), all);
+        Collection<UserDto> result = userService.findAll();
+
+        assertThat(result).hasSize(1);
+        verify(userStorage, times(1)).findAll();
     }
 
     @Test
-    public void shouldCreateUser() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        User user = userService.create(mockUser);
+    void create_ShouldSaveUser_WhenRequestIsValid() {
+        NewUserRequest request = new NewUserRequest();
+        request.setEmail("user@yandex.ru");
+        request.setLogin("user_login");
+        request.setName("UserName");
+        request.setBirthday(LocalDate.of(2000, 1, 1));
 
-        assertEquals(user, mockUser);
+        when(userStorage.create(any(User.class))).thenReturn(validUser);
+
+        UserDto createdDto = userService.create(request);
+
+        assertThat(createdDto).isNotNull();
+        assertThat(createdDto.getLogin()).isEqualTo("user_login");
+        verify(userStorage, times(1)).create(any(User.class));
     }
 
     @Test
-    public void shouldCreateUserWithLoginWithSpace() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", " ", "name", LocalDate.of(1999, 12, 6), null);
-        assertThrows(ValidationException.class, () -> userService.create(mockUser));
+    void create_ShouldUseLoginAsName_WhenNameIsEmptyOrBlank() {
+        NewUserRequest request = new NewUserRequest();
+        request.setEmail("user@yandex.ru");
+        request.setLogin("no_name_login");
+        request.setName(""); // Пустое имя должно замениться на логин
+        request.setBirthday(LocalDate.of(2000, 1, 1));
+
+        User mockReturnedUser = new User();
+        mockReturnedUser.setId(3L);
+        mockReturnedUser.setLogin("no_name_login");
+        mockReturnedUser.setName("no_name_login");
+        mockReturnedUser.setBirthday(LocalDate.of(2000, 1, 1));
+
+        when(userStorage.create(any(User.class))).thenReturn(mockReturnedUser);
+
+        UserDto createdDto = userService.create(request);
+
+        assertThat(createdDto.getName()).isEqualTo("no_name_login");
     }
 
     @Test
-    public void shouldCreateUserWithEmptyName() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "name", "", LocalDate.of(1999, 12, 6), null);
-        User mockUser1 = new User(1L, "test@fg.ru", "name", "name", LocalDate.of(1999, 12, 6), null);
-        User user = userService.create(mockUser);
+    void create_ShouldThrowValidationException_WhenLoginContainsSpaces() {
+        NewUserRequest request = new NewUserRequest();
+        request.setLogin("invalid login");
+        request.setEmail("user@yandex.ru");
 
-        assertEquals(user, mockUser1);
+        assertThatThrownBy(() -> userService.create(request))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Логин не может быть пустым и содержать пробелы");
+
+        verify(userStorage, never()).create(any());
     }
 
     @Test
-    public void shouldUpdateUser() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "name", "name", LocalDate.of(1999, 12, 6), null);
-        User user = userService.create(mockUser);
-        User mockUser1 = new User(1L, "test1@fg.ru", "name1", "name1", LocalDate.of(1999, 12, 6), null);
-        userService.update(mockUser1);
-        assertEquals(user, mockUser1);
+    void getUser_ShouldReturnUserDto_WhenIdExists() {
+        when(userStorage.get(1L)).thenReturn(Optional.of(validUser));
+
+        UserDto result = userService.getUser(1L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(1L);
     }
 
     @Test
-    public void shouldGetUser() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser);
+    void getUser_ShouldThrowNotFoundException_WhenIdDoesNotExist() {
+        when(userStorage.get(999L)).thenReturn(Optional.empty());
 
-        User user = userService.getUser(1L);
-        assertEquals(user, mockUser);
+        assertThatThrownBy(() -> userService.getUser(999L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Пользователь не найден с ID: 999");
     }
 
     @Test
-    public void shouldGetUserNotFound() throws Exception {
-        assertThrows(NotFoundException.class, () -> userService.getUser(1L));
+    void update_ShouldModifyFields_WhenUserExists() {
+        UpdateUserRequest updateRequest = new UpdateUserRequest();
+        updateRequest.setId(1L);
+        updateRequest.setEmail("new@yandex.ru");
+        updateRequest.setLogin("new_login");
+
+        when(userStorage.get(1L)).thenReturn(Optional.of(validUser));
+        when(userStorage.update(any(User.class))).thenReturn(validUser);
+
+        UserDto result = userService.update(updateRequest);
+
+        assertThat(result).isNotNull();
+        verify(userStorage, times(1)).update(any(User.class));
     }
 
     @Test
-    public void shouldAddFriend() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser);
-        User mockUser1 = new User(2L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser1);
+    void addFriend_ShouldCallStorage_WhenUsersAreDifferent() {
+        when(userStorage.get(1L)).thenReturn(Optional.of(validUser));
+        when(userStorage.get(2L)).thenReturn(Optional.of(friendUser));
+
         userService.addFriend(1L, 2L);
 
-        Collection<User> all = userService.findAll();
-        assertEquals(2, all.size());
-        assertEquals(all.iterator().next().getFriends().size(), 1);
+        verify(userStorage, times(1)).addFriend(1L, 2L);
     }
 
     @Test
-    public void shouldAddFriendNotFound() throws Exception {
-        assertThrows(NotFoundException.class, () -> userService.addFriend(1L, 2L));
+    void addFriend_ShouldNotCallStorage_WhenUserAddsThemselves() {
+        when(userStorage.get(1L)).thenReturn(Optional.of(validUser));
+
+        userService.addFriend(1L, 1L);
+
+        verify(userStorage, never()).addFriend(1L, 1L);
     }
 
     @Test
-    public void shouldDeleteFriend() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser);
-        User mockUser1 = new User(2L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser1);
-        userService.addFriend(1L, 2L);
+    void getFriends_ShouldReturnFriendList() {
+        when(userStorage.get(1L)).thenReturn(Optional.of(validUser));
+        when(userStorage.getFriends(1L)).thenReturn(List.of(friendUser));
 
-        userService.deleteFriend(1L, 2L);
+        List<UserDto> friends = userService.getFriends(1L);
 
-        Collection<User> all = userService.findAll();
-        assertEquals(2, all.size());
-        assertEquals(all.iterator().next().getFriends().size(), 0);
+        assertThat(friends).hasSize(1);
+        assertThat(friends.get(0).getId()).isEqualTo(2L);
     }
 
     @Test
-    public void shouldDeleteFriendNotFound() throws Exception {
-        assertThrows(NotFoundException.class, () -> userService.deleteFriend(1L, 2L));
-    }
+    void getCommonFriends_ShouldReturnIntersection() {
+        User common = new User();
+        common.setId(3L);
+        common.setLogin("common");
 
-    @Test
-    public void shouldGetFriends() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser);
-        User mockUser1 = new User(2L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser1);
-        userService.addFriend(1L, 2L);
+        when(userStorage.getCommonFriends(1L, 2L)).thenReturn(List.of(common));
 
-        List<User> friends = userService.getFriends(1L);
+        List<UserDto> commonFriends = userService.getCommonFriends(1L, 2L);
 
-        assertEquals(1, friends.size());
-    }
-
-    @Test
-    public void shouldGetFriendsNotFound() throws Exception {
-        assertThrows(NotFoundException.class, () -> userService.getFriends(1L));
-    }
-
-    @Test
-    public void shouldGetCommonFriends() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser);
-        User mockUser1 = new User(2L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser1);
-        User mockUser2 = new User(3L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        userService.create(mockUser2);
-        userService.addFriend(1L, 2L);
-        userService.addFriend(1L, 3L);
-        userService.addFriend(2L, 3L);
-
-        List<User> friends = userService.getCommonFriends(1L, 2L);
-
-        assertEquals(1, friends.size());
+        assertThat(commonFriends).hasSize(1);
+        assertThat(commonFriends.get(0).getId()).isEqualTo(3L);
     }
 }

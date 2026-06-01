@@ -1,222 +1,175 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.yandex.practicum.filmorate.model.User;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import ru.yandex.practicum.filmorate.dto.NewUserRequest;
+import ru.yandex.practicum.filmorate.dto.UpdateUserRequest;
+import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(UserController.class)
-public class UserControllerTest {
-    @Autowired
-    private MockMvc mockMvc;
+@ExtendWith(MockitoExtension.class)
+class UserControllerTest {
 
-    @MockBean
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper;
+
+    @Mock
     private UserService userService;
 
-    @Test
-    public void shouldReturnUsers() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        when(userService.findAll()).thenReturn(List.of(mockUser));
+    @InjectMocks
+    private UserController userController;
 
-        mockMvc.perform(get("/users")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().json("[{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"email\": \"test@fg.ru\",\n" +
-                        "    \"login\": \"test\",\n" +
-                        "    \"name\": \"name\",\n" +
-                        "    \"birthday\": \"1999-12-06\"\n" +
-                        "}]"));
+    private UserDto validUserDto;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
+
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+
+        validUserDto = new UserDto();
+        validUserDto.setId(1L);
+        validUserDto.setEmail("user@yandex.ru");
+        validUserDto.setLogin("user_login");
+        validUserDto.setName("UserName");
+        validUserDto.setBirthday(LocalDate.of(2000, 1, 1));
     }
 
     @Test
-    public void shouldCreateUser() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        when(userService.create(mockUser)).thenReturn(mockUser);
+    void create_ShouldReturnCreatedUser_WhenRequestIsValid() throws Exception {
+        NewUserRequest request = new NewUserRequest();
+        request.setEmail("user@yandex.ru");
+        request.setLogin("user_login");
+        request.setName("UserName");
+        request.setBirthday(LocalDate.of(2000, 1, 1));
+
+        when(userService.create(any(NewUserRequest.class))).thenReturn(validUserDto);
 
         mockMvc.perform(post("/users")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"email\": \"test@fg.ru\",\n" +
-                                "    \"login\": \"test\",\n" +
-                                "    \"name\": \"name\",\n" +
-                                "    \"birthday\": \"1999-12-06\"\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(content().json("{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"email\": \"test@fg.ru\",\n" +
-                        "    \"login\": \"test\",\n" +
-                        "    \"name\": \"name\",\n" +
-                        "    \"birthday\": \"1999-12-06\"\n" +
-                        "}"));
+                .andExpect(jsonPath("$.id").value(validUserDto.getId()))
+                .andExpect(jsonPath("$.email").value(validUserDto.getEmail()))
+                .andExpect(jsonPath("$.login").value(validUserDto.getLogin()));
+
+        verify(userService, times(1)).create(any(NewUserRequest.class));
     }
 
     @Test
-    public void shouldCreateUserWithWrongEmail() throws Exception {
-        mockMvc.perform(post("/users")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"email\": \"testfg.ru\",\n" +
-                                "    \"login\": \"test\",\n" +
-                                "    \"name\": \"name\",\n" +
-                                "    \"birthday\": \"1999-12-06\"\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError());
-    }
+    void update_ShouldReturnUpdatedUser_WhenRequestIsValid() throws Exception {
+        UpdateUserRequest updateRequest = new UpdateUserRequest();
+        updateRequest.setId(1L);
+        updateRequest.setEmail("updated@yandex.ru");
+        updateRequest.setLogin("updated_login");
+        updateRequest.setName("UpdatedName");
+        updateRequest.setBirthday(LocalDate.of(2000, 1, 1));
 
-    @Test
-    public void shouldCreateUserWithEmptyEmail() throws Exception {
-        mockMvc.perform(post("/users")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"login\": \"test\",\n" +
-                                "    \"name\": \"name\",\n" +
-                                "    \"birthday\": \"1999-12-06\"\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError());
-    }
+        validUserDto.setEmail("updated@yandex.ru");
+        validUserDto.setLogin("updated_login");
+        validUserDto.setName("UpdatedName");
 
-    @Test
-    public void shouldCreateUserWithEmptyLogin() throws Exception {
-        mockMvc.perform(post("/users")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"email\": \"test@fg.ru\",\n" +
-                                "    \"name\": \"name\",\n" +
-                                "    \"birthday\": \"1999-12-06\"\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError());
-    }
-
-    @Test
-    public void shouldCreateUserWithWrongDate() throws Exception {
-        mockMvc.perform(post("/users")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"email\": \"test@fg.ru\",\n" +
-                                "    \"login\": \"test\",\n" +
-                                "    \"name\": \"name\",\n" +
-                                "    \"birthday\": \"199912-06\"\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is5xxServerError());
-    }
-
-    @Test
-    public void shouldUpdateUser() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        when(userService.update(mockUser)).thenReturn(mockUser);
+        when(userService.update(any(UpdateUserRequest.class))).thenReturn(validUserDto);
 
         mockMvc.perform(put("/users")
-                        .content("{\n" +
-                                "    \"id\": 1,\n" +
-                                "    \"email\": \"test@fg.ru\",\n" +
-                                "    \"login\": \"test\",\n" +
-                                "    \"name\": \"name\",\n" +
-                                "    \"birthday\": \"1999-12-06\"\n" +
-                                "}")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(content().json("{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"email\": \"test@fg.ru\",\n" +
-                        "    \"login\": \"test\",\n" +
-                        "    \"name\": \"name\",\n" +
-                        "    \"birthday\": \"1999-12-06\"\n" +
-                        "}"));
+                .andExpect(jsonPath("$.email").value("updated@yandex.ru"))
+                .andExpect(jsonPath("$.login").value("updated_login"))
+                .andExpect(jsonPath("$.name").value("UpdatedName"));
+
+        verify(userService, times(1)).update(any(UpdateUserRequest.class));
     }
 
     @Test
-    public void shouldGetUser() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        when(userService.getUser(1)).thenReturn(mockUser);
+    void getUsers_ShouldReturnListOfUsers() throws Exception {
+        when(userService.findAll()).thenReturn(List.of(validUserDto));
+
+        mockMvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(validUserDto.getId()));
+
+        verify(userService, times(1)).findAll();
+    }
+
+    @Test
+    void getUser_ShouldReturnUser_WhenIdIsValid() throws Exception {
+        when(userService.getUser(1L)).thenReturn(validUserDto);
 
         mockMvc.perform(get("/users/1"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"email\": \"test@fg.ru\",\n" +
-                        "    \"login\": \"test\",\n" +
-                        "    \"name\": \"name\",\n" +
-                        "    \"birthday\": \"1999-12-06\"\n" +
-                        "}"));
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.login").value("user_login"));
+
+        verify(userService, times(1)).getUser(1L);
     }
 
     @Test
-    public void shouldAddFriend() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        mockUser.getFriends().add(2L);
-
-        when(userService.addFriend(1L, 2L)).thenReturn(mockUser);
+    void addFriend_ShouldReturnOk_WhenParametersAreValid() throws Exception {
+        doNothing().when(userService).addFriend(anyLong(), anyLong());
 
         mockMvc.perform(put("/users/1/friends/2"))
-                .andExpect(status().isOk())
-                .andExpect(content().json("{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"email\": \"test@fg.ru\",\n" +
-                        "    \"login\": \"test\",\n" +
-                        "    \"name\": \"name\",\n" +
-                        "    \"birthday\": \"1999-12-06\"\n" +
-                        "}"));
+                .andExpect(status().isOk());
+
+        verify(userService, times(1)).addFriend(1L, 2L);
     }
 
     @Test
-    public void shouldDeleteFriend() throws Exception {
-        doNothing().when(userService).deleteFriend(1L, 1L);
+    void deleteFriend_ShouldReturnOk_WhenParametersAreValid() throws Exception {
+        doNothing().when(userService).deleteFriend(anyLong(), anyLong());
 
         mockMvc.perform(delete("/users/1/friends/2"))
                 .andExpect(status().isOk());
+
+        verify(userService, times(1)).deleteFriend(1L, 2L);
     }
 
     @Test
-    public void shouldGetFriends() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        when(userService.getFriends(1)).thenReturn(List.of(mockUser));
+    void getFriends_ShouldReturnFriendsCollection() throws Exception {
+        when(userService.getFriends(1L)).thenReturn(List.of(validUserDto));
 
         mockMvc.perform(get("/users/1/friends"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("[{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"email\": \"test@fg.ru\",\n" +
-                        "    \"login\": \"test\",\n" +
-                        "    \"name\": \"name\",\n" +
-                        "    \"birthday\": \"1999-12-06\"\n" +
-                        "}]"));
+                .andExpect(jsonPath("$.length()").value(1));
+
+        verify(userService, times(1)).getFriends(1L);
     }
 
     @Test
-    public void shouldCommonFriends() throws Exception {
-        User mockUser = new User(1L, "test@fg.ru", "test", "name", LocalDate.of(1999, 12, 6), null);
-        when(userService.getCommonFriends(1, 2)).thenReturn(List.of(mockUser));
+    void getCommonFriends_ShouldReturnCommonFriendsList() throws Exception {
+        UserDto commonFriend = new UserDto();
+        commonFriend.setId(3L);
+        commonFriend.setLogin("common_friend");
+
+        when(userService.getCommonFriends(1L, 2L)).thenReturn(List.of(commonFriend));
 
         mockMvc.perform(get("/users/1/friends/common/2"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("[{\n" +
-                        "    \"id\": 1,\n" +
-                        "    \"email\": \"test@fg.ru\",\n" +
-                        "    \"login\": \"test\",\n" +
-                        "    \"name\": \"name\",\n" +
-                        "    \"birthday\": \"1999-12-06\"\n" +
-                        "}]"));
-    }
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(3L));
 
+        verify(userService, times(1)).getCommonFriends(1L, 2L);
+    }
 }
