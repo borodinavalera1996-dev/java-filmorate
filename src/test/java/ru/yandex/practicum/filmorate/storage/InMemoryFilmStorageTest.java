@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -34,7 +35,7 @@ public class InMemoryFilmStorageTest {
         Mpa mpa = new Mpa();
         mpa.setId(1L);
         mpa.setName("G");
-        return new Film(id, name, "testtest", LocalDate.of(1999, 12, 6), 100L, mpa, new HashSet<>(), new HashSet<>());
+        return new Film(id, name, "testtest", LocalDate.of(1999, 12, 6), 100L, mpa, new HashSet<>(), new ArrayList<>());
     }
 
     @Test
